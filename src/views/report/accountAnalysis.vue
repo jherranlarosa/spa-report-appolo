@@ -1,24 +1,39 @@
 <template>
   <div class="app-container calendar-list-container">
     <div class="filter-container">
-      <el-input @keyup.enter.native="handleFilter" style="width: 200px;" class="filter-item" :placeholder="$t('table.title')" v-model="listQuery.title">
-      </el-input>
-      <el-select clearable style="width: 90px" class="filter-item" v-model="listQuery.importance" :placeholder="$t('table.importance')">
-        <el-option v-for="item in importanceOptions" :key="item" :label="item" :value="item">
+      <el-date-picker class="filter-item" style="width: 110px" v-model="year" type="year" placeholder="Año" />
+
+    <el-radio  class="filter-item"  v-model="alternativeMonth" label="1" border size="medium">Del Mes</el-radio>
+    <el-radio  class="filter-item"  v-model="alternativeMonth" label="2" border size="medium">Al Mes</el-radio>
+
+      
+      <el-select class="filter-item" clearable style="width: 110px" v-model="listQuery.importance" placeholder="Seleccione un mes">
+        <el-option v-for="item in month" :key="item" :label="item" :value="item">
         </el-option>
       </el-select>
-      <el-select clearable class="filter-item" style="width: 130px" v-model="listQuery.type" :placeholder="$t('table.type')">
-        <el-option v-for="item in  calendarTypeOptions" :key="item.key" :label="item.display_name+'('+item.key+')'" :value="item.key">
+
+
+      <el-select class="filter-item" style="width: 110px" v-model="countSelect" filterable placeholder="Cuenta">
+        <el-option
+          v-for="item in counts"
+          :key="item.value"
+          :label="item.label"
+          :value="item.value">
         </el-option>
       </el-select>
-      <el-select @change='handleFilter' style="width: 140px" class="filter-item" v-model="listQuery.sort">
-        <el-option v-for="item in sortOptions" :key="item.key" :label="item.label" :value="item.key">
+
+      <el-select class="filter-item" style="width: 145px" v-model="subCountSelect" filterable placeholder="Sub Cuenta">
+        <el-option
+          v-for="item in subCounts"
+          :key="item.value"
+          :label="item.label"
+          :value="item.value">
         </el-option>
       </el-select>
-      <el-button class="filter-item" type="primary" v-waves icon="el-icon-search" @click="handleFilter">{{$t('table.search')}}</el-button>
-      <el-button class="filter-item" style="margin-left: 10px;" @click="handleCreate" type="primary" icon="el-icon-edit">{{$t('table.add')}}</el-button>
-      <el-button class="filter-item" type="primary" :loading="downloadLoading" v-waves icon="el-icon-download" @click="handleDownload">{{$t('table.export')}}</el-button>
-      <el-checkbox class="filter-item" style='margin-left:15px;' @change='tableKey=tableKey+1' v-model="showReviewer">{{$t('table.reviewer')}}</el-checkbox>
+    <el-checkbox  class="filter-item"  v-model="allCounts" label="1" border size="medium">Todo (subcuentas)</el-checkbox>
+
+      <el-button class="filter-item" type="primary" v-waves icon="el-icon-search" @click="handleFilter">Buscar</el-button>
+      <el-button class="filter-item" type="primary" :loading="downloadLoading" v-waves icon="el-icon-download" @click="handleDownload">Exportar</el-button>
     </div>
 
     <el-table :key='tableKey' :data="list" v-loading="listLoading" element-loading-text="给我一点时间" border fit highlight-current-row
@@ -28,33 +43,12 @@
           <span>{{scope.row.id}}</span>
         </template>
       </el-table-column>
-      <el-table-column width="150px" align="center" :label="$t('table.date')">
+      <el-table-column align="center" :label="'Other Date :)'">
         <template slot-scope="scope">
-          <span>{{scope.row.timestamp | parseTime('{y}-{m}-{d} {h}:{i}')}}</span>
+          <span>{{scope.row.id}}</span>
         </template>
       </el-table-column>
-      <el-table-column min-width="150px" :label="$t('table.title')">
-        <template slot-scope="scope">
-          <span class="link-type" @click="handleUpdate(scope.row)">{{scope.row.title}}</span>
-          <el-tag>{{scope.row.type | typeFilter}}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column width="110px" align="center" :label="$t('table.author')">
-        <template slot-scope="scope">
-          <span>{{scope.row.author}}</span>
-        </template>
-      </el-table-column>
-      <el-table-column width="110px" v-if='showReviewer' align="center" :label="$t('table.reviewer')">
-        <template slot-scope="scope">
-          <span style='color:red;'>{{scope.row.reviewer}}</span>
-        </template>
-      </el-table-column>
-      <el-table-column width="80px" :label="$t('table.importance')">
-        <template slot-scope="scope">
-          <svg-icon v-for="n in +scope.row.importance" icon-class="star" class="meta-item__icon" :key="n"></svg-icon>
-        </template>
-      </el-table-column>
-      <el-table-column align="center" :label="$t('table.readings')" width="95">
+      <el-table-column align="center" label="Detalle">
         <template slot-scope="scope">
           <span v-if="scope.row.pageviews" class="link-type" @click='handleFetchPv(scope.row.pageviews)'>{{scope.row.pageviews}}</span>
           <span v-else>0</span>
@@ -133,6 +127,7 @@
 </template>
 
 <script>
+/* eslint-disable */ 
 import { fetchList, fetchPv, createArticle, updateArticle } from '@/api/article'
 import waves from '@/directive/waves' // 水波纹指令
 import { parseTime } from '@/utils'
@@ -157,6 +152,43 @@ export default {
   },
   data() {
     return {
+        allCounts: '',
+        counts: [{
+          value: 'Cuenta 01',
+          label: 'Cuenta 01'
+        }, {
+          value: 'Cuenta 02',
+          label: 'Cuenta 02'
+        }, {
+          value: 'Cuenta 03',
+          label: 'Cuenta 03'
+        }, {
+          value: 'Cuenta 04',
+          label: 'Cuenta 04'
+        }, {
+          value: 'Cuenta 05',
+          label: 'Cuenta 05'
+        }],
+        countSelect: '',
+        subCountSelect: '',
+        subCounts: [{
+          value: 'Sub Cuenta 01',
+          label: 'Sub Cuenta 01'
+        }, {
+          value: 'Sub Cuenta 02',
+          label: 'Sub Cuenta 02'
+        }, {
+          value: 'Sub Cuenta 03',
+          label: 'Sub Cuenta 03'
+        }, {
+          value: 'Sub Cuenta 04',
+          label: 'Sub Cuenta 04'
+        }, {
+          value: 'Sub Cuenta 05',
+          label: 'Sub Cuenta 05'
+        }],
+        alternativeMonth: '1',
+      year: ' ',
       tableKey: 0,
       list: null,
       total: null,
@@ -169,7 +201,7 @@ export default {
         type: undefined,
         sort: '+id'
       },
-      importanceOptions: [1, 2, 3],
+      month: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
       calendarTypeOptions,
       sortOptions: [{ label: 'ID Ascending', key: '+id' }, { label: 'ID Descending', key: '-id' }],
       statusOptions: ['published', 'draft', 'deleted'],
