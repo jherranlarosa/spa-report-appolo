@@ -1,5 +1,5 @@
 module.exports = {
   NODE_ENV: '"production"',
   ENV_CONFIG: '"prod"',
-  BASE_API: '"localhost:8000/api"'
+  BASE_API: '"localhost:8087/ApiSiaf/"'
 }
